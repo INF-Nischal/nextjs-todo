@@ -1,4 +1,4 @@
-export type taskSchema = {
-    id: number;
+export type tasks = {
+    id: string;
     title: string;
 }

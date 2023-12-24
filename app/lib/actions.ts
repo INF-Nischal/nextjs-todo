@@ -3,6 +3,7 @@
 import { sql } from "@vercel/postgres";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { tasks } from "./definitions";
 
 const FormSchema = z.object({
   id: z.string(),
@@ -12,8 +13,8 @@ const FormSchema = z.object({
 export type State = {
   errors?: {
     title?: string[];
-  } | undefined;
-  message?: string | null | undefined;
+  };
+  message?: string | null;
 };
 
 const AddTask = FormSchema.omit({ id: true });
@@ -24,7 +25,6 @@ export async function addTask(
 ): Promise<State> {
   const validateFields = AddTask.safeParse({
     title: formData.get("title"),
-    status: formData.get("status"),
   });
 
   if (!validateFields.success) {
@@ -35,9 +35,10 @@ export async function addTask(
   }
 
   const { title } = validateFields.data;
+  console.log("Saving task", title);
 
   try {
-    await sql`INSERT INTO taskSchema (title) VALUES (${title})`;
+    await sql<tasks>`INSERT INTO tasks (title) VALUES (${title})`;
     console.log("Task saved successfully");
   } catch (error) {
     console.error(error);
@@ -48,4 +49,18 @@ export async function addTask(
 
   revalidatePath("/");
   return { errors: undefined, message: null };
+}
+
+export async function deleteTask(id: string) {
+  console.log("Deleting task", id);
+
+  try {
+    await sql`DELETE FROM tasks WHERE id = ${id}`;
+    console.log("Task deleted successfully");
+  } catch (error) {
+    console.error(error);
+    throw new Error("An error occurred while deleting your task");
+  }
+
+  revalidatePath("/");
 }
